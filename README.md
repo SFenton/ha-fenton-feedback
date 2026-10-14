@@ -18,7 +18,7 @@ Issues land in the private request repository (`SFenton/fenton-hass-requests` by
 | `POST /api/fenton_feedback/media?name=…&content_type=image/…\|video/…` | Raw file ≤ 10 MB (the app compresses first) → `{url}` |
 | `POST /api/fenton_feedback/report` | JSON `{kind: bug\|feature, platform: ios\|ipados\|iphone-duo, title, description, repro?, expected?, diagnostics: [[label, value]], media: [{name, url, video}]}` → `201 {number, url}` |
 
-Errors answer `{error, code}` (`invalid_form`, `title_required`, `description_required`, `field_too_long`, `too_many_attachments`, `invalid_media`, `unsupported_media`, `payload_too_large`, `rate_limited`, `not_configured`, `github_*`). Ten reports per user per ten minutes. Labels: `Bug`/`Feature`, `From App`, `iOS`/`iPadOS`/`iPhone Duo`; bodies end with `<!-- fenton-feedback:v1 -->`, and typed `<!--` is escaped so it can't be forged.
+Errors answer `{error, code}` (`invalid_form`, `title_required`, `description_required`, `field_too_long`, `too_many_attachments`, `invalid_media`, `unsupported_media`, `payload_too_large`, `rate_limited`, `not_configured`, `github_*`). Per user per ten minutes: ten reports and forty media uploads. Labels: `Bug`/`Feature`, `From App`, `iOS`/`iPadOS`/`iPhone Duo`; bodies end with `<!-- fenton-feedback:v1 -->`, typed `<!--`/`-->` are escaped so they can't hide rows or forge it, and typed `@mentions` get a zero-width joiner so they notify no one.
 
 ## Development
 

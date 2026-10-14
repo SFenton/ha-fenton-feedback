@@ -61,9 +61,15 @@ def one_line(text: str) -> str:
     return " ".join(text.split())
 
 
+#: Zero-width joiner placed after `@` so typed mentions don't notify anyone.
+ZWJ = "\u200d"
+
+
 def escaped(text: str) -> str:
-    """Escape HTML comment openers so typed text can't hide content or forge the marker."""
-    return text.replace("<!--", "&lt;!--")
+    """Make typed text inert: HTML comment openers and closers can't hide content or forge the marker, and
+    `@name` mentions don't notify (a zero-width joiner after the `@`)."""
+    text = text.replace("<!--", "&lt;!--").replace("-->", "--&gt;")
+    return re.sub(r"@(?=[A-Za-z0-9])", "@" + ZWJ, text)
 
 
 def table_cell(text: str) -> str:
@@ -127,7 +133,8 @@ def parse(payload: Any) -> Report:
         if not isinstance(item, dict) or not isinstance(item.get("url"), str) or not ATTACHMENT_URL.match(item["url"]):
             raise ReportError("invalid_media")
         name = one_line(str(item.get("name", "attachment")))[:120] or "attachment"
-        report.media.append(Media(name=name.replace("]", "").replace("[", ""), url=item["url"], video=bool(item.get("video"))))
+        name = escaped(name.replace("]", "").replace("[", "")) or "attachment"
+        report.media.append(Media(name=name, url=item["url"], video=bool(item.get("video"))))
     return report
 
 
@@ -157,4 +164,4 @@ def compose(report: Report, reporter: str | None) -> tuple[str, str, list[str]]:
     sections.append("### Diagnostics\n\n| | |\n|---|---|\n" + table)
     sections.append(f"<sub>Filed from the app's Settings through Home Assistant.</sub>\n{MARKER}")
     labels = [KINDS[report.kind][1], FROM_APP_LABEL, PLATFORMS[report.platform]]
-    return one_line(report.title), "\n\n".join(sections), labels
+    return escaped(one_line(report.title)), "\n\n".join(sections), labels

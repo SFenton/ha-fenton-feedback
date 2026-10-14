@@ -96,6 +96,33 @@ async def test_rate_limit_and_unload(hass: HomeAssistant, configured, hass_clien
 async def test_requires_auth(hass: HomeAssistant, configured, hass_client_no_auth) -> None:
     client = await hass_client_no_auth()
     assert (await client.get("/api/fenton_feedback/status")).status == HTTPStatus.UNAUTHORIZED
+    with patch(f"{CLIENT}.upload", AsyncMock(return_value=URL)) as upload, \
+         patch(f"{CLIENT}.create_issue", AsyncMock(return_value=(1, "https://github.com/x/1"))) as create:
+        media = await client.post("/api/fenton_feedback/media?name=a.png&content_type=image/png", data=b"png")
+        report = await client.post("/api/fenton_feedback/report", json={"kind": "feature", "platform": "ios",
+                                                                         "title": "[Feature] X", "description": "Y"})
+    assert media.status == HTTPStatus.UNAUTHORIZED and report.status == HTTPStatus.UNAUTHORIZED
+    upload.assert_not_awaited()
+    create.assert_not_awaited()
+
+
+async def test_media_is_rate_limited(hass: HomeAssistant, configured, hass_client) -> None:
+    client = await hass_client()
+    with patch(f"{CLIENT}.upload", AsyncMock(return_value=URL)):
+        codes = [(await client.post("/api/fenton_feedback/media?name=a.png&content_type=image/png", data=b"png")).status
+                 for _ in range(41)]
+    assert codes[:40] == [HTTPStatus.OK] * 40 and codes[40] == HTTPStatus.TOO_MANY_REQUESTS
+
+
+async def test_unloading_one_entry_keeps_the_other(hass: HomeAssistant, configured, hass_client) -> None:
+    second = MockConfigEntry(domain=DOMAIN, data={CONF_TOKEN: "t2", CONF_REPOSITORY: "SFenton/other"}, unique_id="sfenton/other")
+    second.add_to_hass(hass)
+    with patch(f"{CLIENT}.verify", AsyncMock(return_value=Account("SFenton", 43))):
+        assert await hass.config_entries.async_setup(second.entry_id)
+    await hass.async_block_till_done()
+    assert await hass.config_entries.async_unload(second.entry_id)
+    client = await hass_client()
+    assert (await (await client.get("/api/fenton_feedback/status")).json())["available"] is True
 
 
 async def test_setup_failures_ask_for_a_new_token(hass: HomeAssistant) -> None:

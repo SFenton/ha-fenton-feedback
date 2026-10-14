@@ -20,7 +20,16 @@ from aiohttp import web
 from homeassistant.components.http import KEY_HASS, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-from .const import API_MEDIA, API_REPORT, API_STATUS, DOMAIN, MAX_MEDIA_BYTES, RATE_LIMIT, RATE_WINDOW_SECONDS
+from .const import (
+    API_MEDIA,
+    API_REPORT,
+    API_STATUS,
+    DOMAIN,
+    MAX_MEDIA_BYTES,
+    MEDIA_RATE_LIMIT,
+    RATE_LIMIT,
+    RATE_WINDOW_SECONDS,
+)
 from .github import GitHubError
 from .report import ReportError, compose, parse
 
@@ -45,7 +54,9 @@ def _error(code: str, status: HTTPStatus) -> web.Response:
 
 
 def _runtime(request: web.Request) -> FeedbackRuntime | None:
-    return request.app[KEY_HASS].data.get(DOMAIN)
+    """The first loaded entry's runtime (one request repository is expected; extra entries are spares)."""
+    entries = request.app[KEY_HASS].data.get(DOMAIN) or {}
+    return next(iter(entries.values()), None)
 
 
 def _github_error(err: GitHubError) -> web.Response:
@@ -57,13 +68,13 @@ def _github_error(err: GitHubError) -> web.Response:
     return _error(f"github_{err.code}" if not err.code.startswith("github_") else err.code, HTTPStatus.BAD_GATEWAY)
 
 
-def _rate_limited(user_id: str, now: float | None = None) -> bool:
-    """Whether this user has sent ``RATE_LIMIT`` reports in the last window (and record this one if not)."""
+def _rate_limited(key: str, now: float | None = None, limit: int = RATE_LIMIT) -> bool:
+    """Whether ``key`` (a user, per endpoint) reached ``limit`` calls in the last window (and record this one if not)."""
     now = time.monotonic() if now is None else now
-    recent = _RECENT[user_id]
+    recent = _RECENT[key]
     while recent and now - recent[0] > RATE_WINDOW_SECONDS:
         recent.popleft()
-    if len(recent) >= RATE_LIMIT:
+    if len(recent) >= limit:
         return True
     recent.append(now)
     return False
@@ -91,6 +102,9 @@ class MediaView(HomeAssistantView):
         runtime = _runtime(request)
         if runtime is None:
             return _error("not_configured", HTTPStatus.SERVICE_UNAVAILABLE)
+        user = request.get("hass_user")
+        if _rate_limited(f"media:{user.id if user else 'anonymous'}", limit=MEDIA_RATE_LIMIT):
+            return _error("rate_limited", HTTPStatus.TOO_MANY_REQUESTS)
         content_type = request.query.get("content_type", "")
         name = request.query.get("name", "attachment")[:120] or "attachment"
         if not content_type.startswith(("image/", "video/")):
