@@ -17,6 +17,7 @@ MARKER = "<!-- fenton-feedback:v1 -->"
 FROM_APP_LABEL = "From App"
 KINDS = {"bug": ("[Bug] ", "Bug"), "feature": ("[Feature] ", "Feature")}
 PLATFORMS = {"ios": "iOS", "ipados": "iPadOS", "iphone-duo": "iPhone Duo"}
+GITHUB_TITLE_LIMIT = 256
 ATTACHMENT_URL = re.compile(r"^https://github\.com/user-attachments/(?:assets|files)/[A-Za-z0-9-]+$")
 
 
@@ -164,4 +165,5 @@ def compose(report: Report, reporter: str | None) -> tuple[str, str, list[str]]:
     sections.append("### Diagnostics\n\n| | |\n|---|---|\n" + table)
     sections.append(f"<sub>Filed from the app's Settings through Home Assistant.</sub>\n{MARKER}")
     labels = [KINDS[report.kind][1], FROM_APP_LABEL, PLATFORMS[report.platform]]
-    return escaped(one_line(report.title)), "\n\n".join(sections), labels
+    # Escaping can lengthen the validated title; GitHub caps titles at 256 characters.
+    return escaped(one_line(report.title))[:GITHUB_TITLE_LIMIT], "\n\n".join(sections), labels

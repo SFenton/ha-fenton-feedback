@@ -76,3 +76,8 @@ def test_typed_text_is_inert():
     assert title == "[Bug] @‍team broke --&gt;"
     assert "![&lt;!--x--&gt;.png](" in body
     assert body.endswith(MARKER) and body.count(MARKER) == 1
+
+
+def test_escaped_titles_stay_within_githubs_limit():
+    title, _, _ = compose(parse({"kind": "bug", "platform": "ios", "title": "[Bug] " + "-->" * 64, "description": "y"}), None)
+    assert len(title) <= 256 and title.startswith("[Bug] --&gt;")
