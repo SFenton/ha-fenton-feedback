@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fenton Home Feedback",
+        "description": "Paste a fine-grained GitHub token with access to only the request repository and Issues set to Read and write. The Fenton Home app files bug reports and feature requests through Home Assistant with it, so the app never holds a GitHub token.",
+        "data": {
+          "token": "GitHub token",
+          "repository": "Request repository (owner/name)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Replace the GitHub token",
+        "description": "GitHub no longer accepts the token for {repository}. Paste a new fine-grained token with Issues set to Read and write.",
+        "data": {
+          "token": "GitHub token"
+        }
+      }
+    },
+    "error": {
+      "token_rejected": "GitHub didn't accept the token.",
+      "no_repository_access": "The token can't reach that repository. Give it access to the request repository.",
+      "rate_limited": "GitHub is limiting requests. Try again in a few minutes.",
+      "cannot_connect": "Couldn't reach GitHub."
+    },
+    "abort": {
+      "already_configured": "This repository is already set up.",
+      "reauth_successful": "The token was replaced."
+    }
+  }
+}
