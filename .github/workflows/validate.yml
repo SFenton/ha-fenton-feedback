@@ -36,6 +36,9 @@ jobs:
       - name: Install
         run: pip install pytest pytest-homeassistant-custom-component
       - name: Unit tests
+        # No Home Assistant: the plugin's autouse fixtures need its event loop.
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
         run: python -m pytest -q tests/unit
       - name: Home Assistant tests
-        run: python -m pytest -q tests/ha -p pytest_homeassistant_custom_component --asyncio-mode=auto
+        run: python -m pytest -q tests/ha --asyncio-mode=auto
