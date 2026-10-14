@@ -20,6 +20,8 @@ MAX_DIAGNOSTICS = 20
 MAX_DIAGNOSTIC_VALUE = 300
 #: Reports per user per window.
 RATE_LIMIT = 10
+#: Media uploads per user per window (a report carries at most ``MAX_ATTACHMENTS``).
+MEDIA_RATE_LIMIT = RATE_LIMIT * 4
 RATE_WINDOW_SECONDS = 600
 
 API_STATUS = "/api/fenton_feedback/status"

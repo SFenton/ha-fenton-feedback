@@ -22,7 +22,7 @@ def test_bug_issue():
     title, body, labels = compose(parse(bug()), "Stephen")
     assert title == "[Bug] Garage stuck"
     assert labels == ["Bug", "From App", "iPhone Duo"]
-    assert "### Description\n\nIt &lt;!-- hides --> things" in body
+    assert "### Description\n\nIt &lt;!-- hides --&gt; things" in body
     assert "### Steps to Reproduce\n\n1. Open\n2. Tap" in body
     assert "Expected Behavior" not in body
     assert f"![shot.png]({URL})\n\n{URL}e" in body
@@ -63,3 +63,16 @@ def test_media_names_and_diagnostics_are_bounded():
     report = parse(bug(media=[{"name": "a[b](c).png\n", "url": URL}], diagnostics=[["Window", "x" * 400]]))
     assert report.media[0].name == "ab(c).png"
     assert len(report.diagnostics[0][1]) == 300
+
+
+def test_typed_text_is_inert():
+    report = parse(bug(description="Hidden <!-- start\nend --> ping @SFenton and @octo",
+                       title="[Bug] @team broke -->", media=[{"name": "<!--x-->.png", "url": URL}]))
+    title, body, _ = compose(report, "Steph")
+    assert "<!--" not in body.replace(MARKER, "")
+    assert "-->" not in body.replace(MARKER, "")
+    assert "&lt;!-- start" in body and "end --&gt;" in body
+    assert "@SFenton" not in body and "@‍SFenton" in body and "@‍octo" in body
+    assert title == "[Bug] @‍team broke --&gt;"
+    assert "![&lt;!--x--&gt;.png](" in body
+    assert body.endswith(MARKER) and body.count(MARKER) == 1

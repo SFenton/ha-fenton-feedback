@@ -37,12 +37,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if err.code in ("token_rejected", "no_repository_access"):
             raise ConfigEntryAuthFailed(err.code) from err
         raise ConfigEntryNotReady(err.code) from err
-    hass.data[DOMAIN] = FeedbackRuntime(client=client, account=account)
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = FeedbackRuntime(client=client, account=account)
     register_views(hass)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Stop accepting reports (the views answer ``not_configured`` until an entry loads again)."""
-    hass.data.pop(DOMAIN, None)
+    """Stop using this entry (the views answer ``not_configured`` once no entry is loaded)."""
+    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     return True
