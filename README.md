@@ -8,7 +8,7 @@ Issues land in the private request repository (`SFenton/fenton-hass-requests` by
 
 1. HACS → Integrations → ⋮ → Custom repositories → add `https://github.com/SFenton/ha-fenton-feedback` (category Integration), then download **Fenton Home Feedback** and restart Home Assistant.
 2. Create a fine-grained GitHub token: resource owner **SFenton**, *Only select repositories* → `fenton-hass-requests`, **Issues: Read and write**, 1 year. Pre-filled page: <https://github.com/settings/personal-access-tokens/new?name=Fenton+Home+feedback+relay&target_name=SFenton&expires_in=365&issues=write>
-3. Settings → Devices & services → Add integration → **Fenton Home Feedback**, paste the token. It is checked with GitHub before it is saved. When it expires, Home Assistant asks for a new one.
+3. Settings → Devices & services → Add integration → **Fenton Home Feedback**, paste the token. It is checked with GitHub before it is saved, and a public repository is refused (reports carry screenshots of the house). When it expires, Home Assistant asks for a new one.
 
 ## Endpoints (Home Assistant access token required)
 

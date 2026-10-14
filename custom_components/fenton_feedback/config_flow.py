@@ -29,7 +29,7 @@ class FentonFeedbackConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             account = await client.verify()
         except GitHubError as err:
-            return None, err.code if err.code in ("token_rejected", "no_repository_access", "rate_limited") else "cannot_connect"
+            return None, err.code if err.code in ("token_rejected", "no_repository_access", "repository_public", "rate_limited") else "cannot_connect"
         return account.login, None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

@@ -21,7 +21,8 @@
       "token_rejected": "GitHub didn't accept the token.",
       "no_repository_access": "The token can't reach that repository. Give it access to the request repository.",
       "rate_limited": "GitHub is limiting requests. Try again in a few minutes.",
-      "cannot_connect": "Couldn't reach GitHub."
+      "cannot_connect": "Couldn't reach GitHub.",
+      "repository_public": "That repository is public. Reports include screenshots of the house, so choose the private request repository (SFenton/fenton-hass-requests)."
     },
     "abort": {
       "already_configured": "This repository is already set up.",
