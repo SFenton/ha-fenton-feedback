@@ -114,6 +114,19 @@ async def test_media_is_rate_limited(hass: HomeAssistant, configured, hass_clien
     assert codes[:40] == [HTTPStatus.OK] * 40 and codes[40] == HTTPStatus.TOO_MANY_REQUESTS
 
 
+async def test_refused_media_does_not_count_and_stale_users_are_forgotten(hass: HomeAssistant, configured, hass_client) -> None:
+    client = await hass_client()
+    for _ in range(45):
+        refused = await client.post("/api/fenton_feedback/media?name=a.txt&content_type=text/plain", data=b"x")
+        assert refused.status == HTTPStatus.UNSUPPORTED_MEDIA_TYPE
+    with patch(f"{CLIENT}.upload", AsyncMock(return_value=URL)):
+        ok = await client.post("/api/fenton_feedback/media?name=a.png&content_type=image/png", data=b"png")
+    assert ok.status == HTTPStatus.OK
+    views._RECENT["media:someone-else"].append(-10_000.0)
+    assert views._rate_limited("media:fresh", now=0.0, limit=40) is False
+    assert "media:someone-else" not in views._RECENT
+
+
 async def test_unloading_one_entry_keeps_the_other(hass: HomeAssistant, configured, hass_client) -> None:
     second = MockConfigEntry(domain=DOMAIN, data={CONF_TOKEN: "t2", CONF_REPOSITORY: "SFenton/other"}, unique_id="sfenton/other")
     second.add_to_hass(hass)

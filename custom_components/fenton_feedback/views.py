@@ -71,6 +71,9 @@ def _github_error(err: GitHubError) -> web.Response:
 def _rate_limited(key: str, now: float | None = None, limit: int = RATE_LIMIT) -> bool:
     """Whether ``key`` (a user, per endpoint) reached ``limit`` calls in the last window (and record this one if not)."""
     now = time.monotonic() if now is None else now
+    # Forget users whose calls have all aged out, so the table never grows past the active ones.
+    for stale in [k for k, calls in _RECENT.items() if k != key and (not calls or now - calls[-1] > RATE_WINDOW_SECONDS)]:
+        del _RECENT[stale]
     recent = _RECENT[key]
     while recent and now - recent[0] > RATE_WINDOW_SECONDS:
         recent.popleft()
@@ -102,15 +105,16 @@ class MediaView(HomeAssistantView):
         runtime = _runtime(request)
         if runtime is None:
             return _error("not_configured", HTTPStatus.SERVICE_UNAVAILABLE)
-        user = request.get("hass_user")
-        if _rate_limited(f"media:{user.id if user else 'anonymous'}", limit=MEDIA_RATE_LIMIT):
-            return _error("rate_limited", HTTPStatus.TOO_MANY_REQUESTS)
         content_type = request.query.get("content_type", "")
         name = request.query.get("name", "attachment")[:120] or "attachment"
         if not content_type.startswith(("image/", "video/")):
             return _error("unsupported_media", HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         if (request.content_length or 0) > MAX_MEDIA_BYTES:
             return _error("payload_too_large", HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        # Counted once the cheap header checks pass, before the body is read.
+        user = request.get("hass_user")
+        if _rate_limited(f"media:{user.id if user else 'anonymous'}", limit=MEDIA_RATE_LIMIT):
+            return _error("rate_limited", HTTPStatus.TOO_MANY_REQUESTS)
         data = await request.read()
         if not data:
             return _error("invalid_form", HTTPStatus.BAD_REQUEST)
