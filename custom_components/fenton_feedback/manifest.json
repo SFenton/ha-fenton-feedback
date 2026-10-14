@@ -1,0 +1,13 @@
+{
+  "domain": "fenton_feedback",
+  "name": "Fenton Home Feedback",
+  "codeowners": ["@SFenton"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://github.com/SFenton/ha-fenton-feedback",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/SFenton/ha-fenton-feedback/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
