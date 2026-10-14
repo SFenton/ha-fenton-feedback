@@ -84,6 +84,9 @@ class GitHubClient:
         repo = await self._json("GET", f"{API}/repos/{self.repository}", on_repository=True)
         if not isinstance(user.get("login"), str) or not isinstance(repo.get("id"), int):
             raise GitHubError("unexpected_response")
+        # Reports carry screenshots of the house: never file them where anyone can read them.
+        if repo.get("private") is not True:
+            raise GitHubError("repository_public")
         return Account(login=user["login"], repository_id=repo["id"])
 
     async def upload(self, repository_id: int, name: str, content_type: str, data: bytes) -> str:

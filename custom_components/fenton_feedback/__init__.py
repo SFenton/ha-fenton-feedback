@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_TOKEN
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_REPOSITORY, DEFAULT_REPOSITORY, DOMAIN
@@ -34,6 +34,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         account = await client.verify()
     except GitHubError as err:
+        if err.code == "repository_public":
+            # A new token can't fix this: the entry must be re-added with the private request repository.
+            raise ConfigEntryError("The request repository is public; re-add the integration with a private one") from err
         if err.code in ("token_rejected", "no_repository_access"):
             raise ConfigEntryAuthFailed(err.code) from err
         raise ConfigEntryNotReady(err.code) from err

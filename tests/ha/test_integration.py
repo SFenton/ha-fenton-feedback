@@ -29,6 +29,10 @@ async def test_flow_creates_the_entry(hass: HomeAssistant) -> None:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_TOKEN: "bad", CONF_REPOSITORY: "SFenton/fenton-hass-requests"})
     assert result["errors"] == {"base": "token_rejected"}
+    with patch(f"{CLIENT}.verify", AsyncMock(side_effect=GitHubError("repository_public"))):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_TOKEN: "good", CONF_REPOSITORY: "SFenton/ha-fenton-feedback"})
+    assert result["errors"] == {"base": "repository_public"}
     with patch(f"{CLIENT}.verify", AsyncMock(return_value=Account("SFenton", 42))), \
          patch("custom_components.fenton_feedback.async_setup_entry", AsyncMock(return_value=True)):
         result = await hass.config_entries.flow.async_configure(
@@ -146,3 +150,13 @@ async def test_setup_failures_ask_for_a_new_token(hass: HomeAssistant) -> None:
         await hass.config_entries.async_setup(entry.entry_id)
     assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
     assert any(flow["context"]["source"] == "reauth" for flow in hass.config_entries.flow.async_progress())
+
+
+async def test_public_repository_fails_setup_without_reauth(hass: HomeAssistant) -> None:
+    assert await async_setup_component(hass, "http", {})
+    entry = MockConfigEntry(domain=DOMAIN, data={CONF_TOKEN: "t", CONF_REPOSITORY: "SFenton/ha-fenton-feedback"})
+    entry.add_to_hass(hass)
+    with patch(f"{CLIENT}.verify", AsyncMock(side_effect=GitHubError("repository_public"))):
+        await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
+    assert not any(flow["context"]["source"] == "reauth" for flow in hass.config_entries.flow.async_progress())

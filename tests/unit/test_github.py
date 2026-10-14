@@ -43,7 +43,7 @@ def run(coro):
 
 
 def test_verify_reads_user_and_repository():
-    session = FakeSession((200, {"login": "SFenton"}), (200, {"id": 42}))
+    session = FakeSession((200, {"login": "SFenton"}), (200, {"id": 42, "private": True}))
     account = run(GitHubClient(session, " tok \n", "SFenton/fenton-hass-requests").verify())
     assert (account.login, account.repository_id) == ("SFenton", 42)
     assert [c[1] for c in session.calls] == ["https://api.github.com/user", "https://api.github.com/repos/SFenton/fenton-hass-requests"]
@@ -54,6 +54,8 @@ def test_verify_reads_user_and_repository():
     ([(401, {})], "token_rejected"),
     ([(200, {"login": "a"}), (404, {})], "no_repository_access"),
     ([(200, {"login": "a"}), (200, [])], "unexpected_response"),
+    ([(200, {"login": "a"}), (200, {"id": 1, "private": False})], "repository_public"),
+    ([(200, {"login": "a"}), (200, {"id": 1})], "repository_public"),
     ([(200, {"x": 1}), (200, {"id": 1})], "unexpected_response"),
     ([(200, ValueError("bad json"))], "network"),
 ])
